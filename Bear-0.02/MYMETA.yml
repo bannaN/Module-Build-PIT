@@ -1,0 +1,24 @@
+---
+abstract: 'A module representive a powerful bear'
+author:
+  - 'Joakim TÃ¸rmoen <joakim.tormoen@evry.com>'
+build_requires:
+  File::Copy::Recursive: 0
+  File::Path: 0
+  Test::More: 0
+configure_requires:
+  Module::Build: 0
+dynamic_config: 0
+generated_by: 'Module::Build version 0.4003, CPAN::Meta::Converter version 2.120921'
+license: restrictive
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Bear
+provides:
+  Bear:
+    file: lib/Bear.pm
+    version: 0.02
+requires:
+  version: 0
+version: 0.02

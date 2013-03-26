@@ -1,0 +1,43 @@
+{
+   "abstract" : "A module representive a powerful bear",
+   "author" : [
+      "Joakim TÃ¸rmoen <joakim.tormoen@evry.com>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Module::Build version 0.4003, CPAN::Meta::Converter version 2.120921",
+   "license" : [
+      "restricted"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Bear",
+   "prereqs" : {
+      "build" : {
+         "requires" : {
+            "File::Copy::Recursive" : "0",
+            "File::Path" : "0",
+            "Test::More" : "0"
+         }
+      },
+      "configure" : {
+         "requires" : {
+            "Module::Build" : "0"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "version" : "0"
+         }
+      }
+   },
+   "provides" : {
+      "Bear" : {
+         "file" : "lib/Bear.pm",
+         "version" : "0.02"
+      }
+   },
+   "release_status" : "stable",
+   "version" : "0.02"
+}
