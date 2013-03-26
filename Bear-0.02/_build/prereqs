@@ -1,0 +1,13 @@
+do{ my $x = {
+       'build_requires' => {
+                             'Test::More' => 0,
+                             'File::Path' => 0,
+                             'File::Copy::Recursive' => 0
+                           },
+       'conflicts' => {},
+       'requires' => {
+                       'version' => 0
+                     },
+       'recommends' => {}
+     };
+$x; }
