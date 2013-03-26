@@ -17,21 +17,21 @@ my $class = Module::Build->subclass(code => q{
     }
     sub ACTION_fakeinstall {
       my $self = shift;
-      
+
       use Data::Dumper;
-      
+
       my $dir = $self->install_base . '/t';
       my $dist_name = $self->dist_name;
       opendir(my $dh, $dir) || die "can't opendir " . $dir . ": $!";
         my @dirs = grep { /^$dist_name/ && -d "$dir/$_" } readdir($dh);
       closedir $dh;
-      
+
       my $r;
-      
+
       if(scalar( @dirs > 3)){
         $r = $self->y_n('You have a large number of test for old versions of ' . $self->dist_name() . '. Do you want to delete all the old tests? (This is a fakeinstall. Action will _NOT_ be executed)', 'y');
       }
-      
+
         if($r){
             print "Deleting " . $dir . "/" . $_ for @dirs;
         }else{
@@ -41,32 +41,32 @@ my $class = Module::Build->subclass(code => q{
                 }
             }
         }
-      
+
       #Retval is the return structure from ExtUtils::Install::install
       $self->SUPER::ACTION_fakeinstall(@_);
     }
-    
+
     sub ACTION_install{
         my $self = shift;
-      
+
       $self->depends_on('build');
-      
+
       use File::Path qw( remove_tree );
       use Data::Dumper;
-      
+
       my $dir = $self->install_base . '/t';
-      
+
       if( ! -e $dir ){
         die( "Cannot create $dir " )if !mkdir( $dir );
-      }      
-      
+      }
+
       my $dist_name = $self->dist_name;
       opendir(my $dh, $dir) || die "can't opendir " . $dir . ": $!";
         my @dirs = grep { /^$dist_name/ && -d "$dir/$_" } readdir($dh);
       closedir $dh;
-      
+
       my $r;
-      
+
       if(scalar( @dirs > 1)){
         $r = $self->y_n('You have tests for a large number(' . scalar(@dirs) . ') of versions of ' . $self->dist_name() . ' installed. Do you want to delete all the old tests?', 'y');
       }
@@ -80,7 +80,7 @@ my $class = Module::Build->subclass(code => q{
                 }
             }
         }
-        $self->SUPER::ACTION_install(@_);        
+        $self->SUPER::ACTION_install(@_);
     }
 });
 

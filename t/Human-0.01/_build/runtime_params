@@ -1,4 +1,0 @@
-do{ my $x = {
-       'install_base' => '/home/joakim/.perlbrew/libs/perl-5.16.2@qa-hack-ex'
-     };
-$x; }
