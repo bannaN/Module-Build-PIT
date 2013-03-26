@@ -52,13 +52,11 @@
 # Avoid Devel::Cover and Devel::CoverX::Covered files.
 \bcover_db\b
 \bcovered\b
- 
-# Avoid MYMETA files
-^MYMETA\.
 #!end included /home/sjn/perl5/lib/perl5/ExtUtils/MANIFEST.SKIP
 
 # Avoid configuration metadata file
-^MYMETA\.
+MYMETA\.yml
+MYMETA\.json
 
 # Avoid Module::Build generated and utility files.
 \bBuild$
