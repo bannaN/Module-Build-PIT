@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- Komodo Project File - DO NOT EDIT -->
-<project id="8b41f277-b3ba-43d2-9e67-91bacc3263ea" kpf_version="5" name="qa-hackathon.komodoproject">
-<preference-set idref="8b41f277-b3ba-43d2-9e67-91bacc3263ea">
-  <string id="perlExtraPaths">/home/joakim/.perlbrew/libs/perl-5.16.2@qa-hack-ex/lib/perl5</string>
-  <boolean id="perl_lintOption_includeCurrentDirForLinter">0</boolean>
-</preference-set>
-</project>
