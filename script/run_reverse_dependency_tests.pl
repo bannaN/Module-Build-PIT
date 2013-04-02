@@ -7,7 +7,7 @@ use Furl;
 use JSON::PP;
 use Pod::Usage;
 use Data::Dumper;
-use Path::Class::Dir;
+use ExtUtils::Installed;
 
 my $module = pop @ARGV || pod2usage();
 
@@ -32,29 +32,62 @@ my $res = Furl->new()->post(
 ...
 die $res->status_code unless $res->is_success;
 
-my %tests = (
-  # dist_name => path
+print Dumper( decode_json($res->content) );
+die();
+
+my $path = File::Spec->catdir( qw/auto tests/);
+
+my $inst = ExtUtils::Installed->new();
+my (@modules) = $inst->modules();
+
+my %modules = (
+  # My::Module => {
+  #  test_files => [
+  #    [file1, alias1],
+  #    [file2, alias2]
+  #  ], #List of test files
+  #  #Other things might pop up from nowhere
+  #}
 );
 
-foreach my $hit (@{decode_json($res->content)->{hits}->{hits}}) {
-  my $dist_name = $hit->{fields}->{distribution};
+my @reverse_deps = map{ $_->{fields}->{distribution} } @{decode_json($res->content)->{hits}->{hits}};
+
+foreach my $dep (@reverse_deps){
+  die($dep . " does is not installed") unless grep { m/^$dep$/ } @modules;
   
-  #Seach for the directory withing @INC and add them to the test hash
-  foreach my $path ( @INC ){
-    my $o_path = Path::Class::Dir->new( $path, '..', '..', 't')->cleanup();
-    next if( !-e $o_path->stringify() || !-d $o_path->stringify());
-    
-    
-    #Read the dir and find the tests which corresponds to $hit->{fields}->{distribution}
-    opendir(my $dh, $o_path->stringify() ) || die "can't opendir " . $o_path->stringify() . ": $!";
-    my @test_folders = grep { /^$dist_name/ && -d  "$o_path->stringify()/$_" } readdir($dh);
-    closedir $dh;
-    
-    $tests{$dist_name} = \@test_folders;
-  }  
+  #Finding test files for the reverse dependency
+  
+  #Best effort
+  my @files = grep { m/$path/} $inst->files($dep);
+  next unless scalar(@files) > 0 ;
+  my $alias_prefix = $dep;
+  my @testfiles = map{
+    my $alias = $_;
+    my $file = $_;
+    $alias =~s/.*$dep//g;
+    [$_, File::Spec->catdir($alias_prefix, $alias) ]
+  } @files;
+  
+  $modules{$dep} = { test_files => [ @testfiles ] };
+  
 }
 
-print Dumper %tests;
+my $formatter   = TAP::Formatter::Console->new;
+my $harness = TAP::Harness->new( { formatter => $formatter } );
+
+my $aggregator = TAP::Parser::Aggregator->new;
+
+$aggregator->start();
+foreach my $module ( keys %modules ){
+  $harness->aggregate_tests($aggregator,  @{ $modules{$module}->{test_files} });
+}
+$aggregator->stop();
+$formatter->summary($aggregator);
+
+#print Dumper \@reverse_deps;
+#print Dumper \@modules;
+
+#print Dumper %tests;
 
 __END__
 
