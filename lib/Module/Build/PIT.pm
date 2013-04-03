@@ -44,7 +44,7 @@ sub process_t_files {
             to   => $dest
         );
     }
-
+  return 1;
 }
 
 sub ACTION_fakeinstall {
@@ -102,7 +102,7 @@ sub ACTION_fakeinstall {
     }
 
     #Retval is the return structure from ExtUtils::Install::install
-    $self->SUPER::ACTION_fakeinstall(@_);
+    return $self->SUPER::ACTION_fakeinstall(@_);
 }
 
 sub ACTION_install {
@@ -153,7 +153,7 @@ sub ACTION_install {
       }
   }
 
-  $self->SUPER::ACTION_install(@_);
+  return $self->SUPER::ACTION_install(@_);
 }
 
 sub _find_installed_test_files{
