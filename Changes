@@ -1,0 +1,9 @@
+Revision history for Perl module Module::Build::PIT.
+
+0.002 Wed Apr  3 13:45:27 CEST 2013 
+  Added pod to lib/Module/Build/PIT.pm and
+    script/run_lib_tests.pl
+  Added README, Changes.
+
+0.001 First version.
+
