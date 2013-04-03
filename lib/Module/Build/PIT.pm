@@ -53,7 +53,7 @@ sub ACTION_fakeinstall {
     use Data::Dumper;
 
     if ( $ENV{'PERL_INSTALL_TESTS'} ) {
-        my $dir = File::Spec->catdir( $self->install_base, qw/lib perl5 auto tests/ );
+        my $dir = File::Spec->catdir( $self->install_destination('lib'), qw/auto tests/ );
 
         if ( !-e $dir ) {
             die("Cannot create $dir ") if !mkdir($dir);
@@ -111,7 +111,8 @@ sub ACTION_install {
   use Data::Dumper;
 
   if ( $ENV{PERL_INSTALL_TESTS} ) {
-      my $dir = File::Spec->catdir( $self->install_base, qw/lib perl5 auto tests/ );
+    
+      my $dir = File::Spec->catdir( $self->install_destination('lib'), qw/auto tests/ );
       if ( !-e $dir ) {
           die("Cannot create $dir ") if !mkdir($dir);
       }
