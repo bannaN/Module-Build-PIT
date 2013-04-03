@@ -1,6 +1,3 @@
-
-# $Id: 904-kwalitee.t,v 1.2 2009/03/16 07:41:54 aff Exp $
-
 use strict;
 use warnings;
 
