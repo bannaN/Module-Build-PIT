@@ -8,6 +8,11 @@ use JSON::PP;
 use Pod::Usage;
 use Data::Dumper;
 use ExtUtils::Installed;
+use TAP::Formatter::Console;
+use TAP::Harness;
+use TAP::Parser::Aggregator;
+
+print Dumper @INC;
 
 my $module = pop @ARGV || pod2usage();
 
@@ -32,62 +37,50 @@ my $res = Furl->new()->post(
 ...
 die $res->status_code unless $res->is_success;
 
-print Dumper( decode_json($res->content) );
-die();
-
 my $path = File::Spec->catdir( qw/auto tests/);
 
 my $inst = ExtUtils::Installed->new();
-my (@modules) = $inst->modules();
+my (@installed_modules) = $inst->modules();
 
-my %modules = (
-  # My::Module => {
-  #  test_files => [
-  #    [file1, alias1],
-  #    [file2, alias2]
-  #  ], #List of test files
-  #  #Other things might pop up from nowhere
-  #}
-);
+my @test_files = ();
 
 my @reverse_deps = map{ $_->{fields}->{distribution} } @{decode_json($res->content)->{hits}->{hits}};
 
-foreach my $dep (@reverse_deps){
-  die($dep . " does is not installed") unless grep { m/^$dep$/ } @modules;
+foreach my $dist_name ( @reverse_deps ){
+  my $module;
+  ($module = $dist_name) =~ s/\-/::/g;
+  my $path = File::Spec->catdir( qw/auto tests/);
   
-  #Finding test files for the reverse dependency
+  unless(grep{ m/^$module$/} @installed_modules){
+    print STDERR "$module is not installed on the system. Skipping ... \n";
+    next;
+  }
   
   #Best effort
-  my @files = grep { m/$path/} $inst->files($dep);
+  my @files = grep { m/$path/} $inst->files($module);
   next unless scalar(@files) > 0 ;
-  my $alias_prefix = $dep;
-  my @testfiles = map{
+  my $dist_name;
+  ($dist_name = $module) =~ s/::/\-/g;
+  push @test_files, map{
     my $alias = $_;
     my $file = $_;
-    $alias =~s/.*$dep//g;
-    [$_, File::Spec->catdir($alias_prefix, $alias) ]
+    $alias =~ s/.*($dist_name\-[\d\.]+)/$1/;
+    [$_, File::Spec->catdir($alias) ]
   } @files;
-  
-  $modules{$dep} = { test_files => [ @testfiles ] };
-  
 }
 
 my $formatter   = TAP::Formatter::Console->new;
-my $harness = TAP::Harness->new( { formatter => $formatter } );
+my $harness = TAP::Harness->new( { formatter => $formatter, lib => [@INC] } );
 
 my $aggregator = TAP::Parser::Aggregator->new;
 
 $aggregator->start();
-foreach my $module ( keys %modules ){
-  $harness->aggregate_tests($aggregator,  @{ $modules{$module}->{test_files} });
+foreach my $test ( @test_files ){
+  $harness->aggregate_tests($aggregator,  $test);
 }
 $aggregator->stop();
 $formatter->summary($aggregator);
 
-#print Dumper \@reverse_deps;
-#print Dumper \@modules;
-
-#print Dumper %tests;
 
 __END__
 
