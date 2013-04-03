@@ -53,10 +53,13 @@ sub ACTION_fakeinstall {
     use Data::Dumper;
 
     if ( $ENV{'PERL_INSTALL_TESTS'} ) {
-        my $dir = File::Spec->catdir( $self->install_destination('lib'), qw/auto tests/ );
-
-        if ( !-e $dir ) {
-            die("Cannot create $dir ") if !mkdir($dir);
+        
+        my @path = qw/auto tests/;
+        my $dir = File::Spec->catdir( $self->install_destination('lib') );
+        for(@path){
+          $dir = File::Spec->catdir( $dir, $_ );
+          next if -e $dir;
+          die("Cannot create $dir ") if !mkdir($dir);
         }
 
         my $dist_name = $self->dist_name();
@@ -111,11 +114,15 @@ sub ACTION_install {
   use Data::Dumper;
 
   if ( $ENV{PERL_INSTALL_TESTS} ) {
-    
-      my $dir = File::Spec->catdir( $self->install_destination('lib'), qw/auto tests/ );
-      if ( !-e $dir ) {
-          die("Cannot create $dir ") if !mkdir($dir);
+      
+      my @path = qw/auto tests/;
+      my $dir = File::Spec->catdir( $self->install_destination('lib') );
+      for(@path){
+        $dir = File::Spec->catdir( $dir, $_ );
+        next if -e $dir;
+        die("Cannot create $dir ") if !mkdir($dir);
       }
+    
       my $dist_name = $self->dist_name;
       opendir( my $dh, $dir ) || die "can't opendir " . $dir . ": $!";
       my @dirs = grep { /^$dist_name/ && -d File::Spec->catdir( $dir, $_ ) } readdir($dh);
