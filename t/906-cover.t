@@ -1,6 +1,3 @@
-
-# $Id: 906-cover.t,v 1.1 2009/02/23 07:36:17 aff Exp $
-
 use strict;
 use warnings;
 
