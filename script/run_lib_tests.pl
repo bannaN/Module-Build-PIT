@@ -1,23 +1,15 @@
 use strict;
 use warnings;
-use Path::Class;
-use Path::Class::Dir;
-use Data::Dumper;
-use App::Prove;
+
 use ExtUtils::Installed;
 use TAP::Formatter::Console;
-use TAP::Parser;
 use TAP::Harness;
 use TAP::Parser::Aggregator;
+use Data::Dumper;
 
-my %modules = (
-  # My::Module => {
-  #  test_files => [
-  #    [file1, alias1],
-  #    [file2, alias2]
-  #  ], #List of test files
-  #  #Other things might pop up from nowhere
-  #}
+my @test_files = (
+#    [file1, alias1],
+#    [file2, alias2]
 );
 
 my $inst = ExtUtils::Installed->new();
@@ -29,16 +21,14 @@ foreach my $module ( @modules ){
   #Best effort
   my @files = grep { m/$path/} $inst->files($module);
   next unless scalar(@files) > 0 ;
-  $modules{$module} = { test_files => [] };
-  my $alias_prefix = $module;
-  my @testfiles = map{
+  my $dist_name;
+  ($dist_name = $module) =~ s/::/\-/g;
+  push @test_files, map{
     my $alias = $_;
     my $file = $_;
-    $alias =~s/.*$module//g;
-    [$_, File::Spec->catdir($alias_prefix, $alias) ]
+    $alias =~ s/.*($dist_name\-[\d\.]+)/$1/;
+    [$_, File::Spec->catdir($alias) ]
   } @files;
-  
-  $modules{$module}->{test_files} = [ @testfiles ];
 }
 
 my $formatter   = TAP::Formatter::Console->new;
@@ -47,8 +37,8 @@ my $harness = TAP::Harness->new( { formatter => $formatter } );
 my $aggregator = TAP::Parser::Aggregator->new;
 
 $aggregator->start();
-foreach my $module ( keys %modules ){
-  $harness->aggregate_tests($aggregator,  @{ $modules{$module}->{test_files} });
+foreach my $test ( @test_files ){
+  $harness->aggregate_tests($aggregator,  $test);
 }
 $aggregator->stop();
 $formatter->summary($aggregator);
