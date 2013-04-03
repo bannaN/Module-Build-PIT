@@ -6,7 +6,7 @@ use warnings;
 use base qw(Module::Build);
 use ExtUtils::Installed;
 
-my $VERSION = "0.001";
+our $VERSION = "0.002";
 
 sub test_dirs{
   my $self = shift;
