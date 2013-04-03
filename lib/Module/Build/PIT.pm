@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use base qw(Module::Build);
+use ExtUtils::Installed;
 
 my $VERSION = "0.001";
 
@@ -102,48 +103,94 @@ sub ACTION_fakeinstall {
 }
 
 sub ACTION_install {
-    my $self = shift;
+  my $self = shift;
 
-    $self->depends_on('build');
+  $self->depends_on('build');
 
-    use File::Path qw( remove_tree );
-    use Data::Dumper;
+  use File::Path qw( remove_tree );
+  use Data::Dumper;
 
-    if ( $ENV{PERL_INSTALL_TESTS} ) {
-        my $dir = File::Spec->catdir( $self->install_base, qw/lib perl5 auto tests/ );
-        if ( !-e $dir ) {
-            die("Cannot create $dir ") if !mkdir($dir);
-        }
-        my $dist_name = $self->dist_name;
-        opendir( my $dh, $dir ) || die "can't opendir " . $dir . ": $!";
-        my @dirs = grep { /^$dist_name/ && -d File::Spec->catdir( $dir, $_ ) } readdir($dh);
-        closedir $dh;
+  if ( $ENV{PERL_INSTALL_TESTS} ) {
+      my $dir = File::Spec->catdir( $self->install_base, qw/lib perl5 auto tests/ );
+      if ( !-e $dir ) {
+          die("Cannot create $dir ") if !mkdir($dir);
+      }
+      my $dist_name = $self->dist_name;
+      opendir( my $dh, $dir ) || die "can't opendir " . $dir . ": $!";
+      my @dirs = grep { /^$dist_name/ && -d File::Spec->catdir( $dir, $_ ) } readdir($dh);
+      closedir $dh;
 
-        my $r;
+      my $r;
 
-        if ( scalar( @dirs > 1 ) ) {
-            $r = $self->y_n(
-                'You have tests for a large number('
-                    . scalar(@dirs)
-                    . ') of versions of '
-                    . $self->dist_name()
-                    . ' installed. Do you want to delete all the old tests?',
-                'y'
-            );
-        }
-        if ($r) {
-            my @del_dirs = map { $dir . "/" . $_ } @dirs;
-            remove_tree( @del_dirs, { verbose => 1 } );
-        }
-        else {
-            foreach my $ldir (@dirs) {
-                if ( $self->y_n( 'Delete ' . $dir . "/" . $ldir . '?', 'y' ) ) {
-                    remove_tree( $dir . "/" . $ldir, { verbose => 1 } );
-                }
-            }
-        }
-    }
+      if ( scalar( @dirs > 1 ) ) {
+          $r = $self->y_n(
+              'You have tests for a large number('
+                  . scalar(@dirs)
+                  . ') of versions of '
+                  . $self->dist_name()
+                  . ' installed. Do you want to delete all the old tests?',
+              'y'
+          );
+      }
+      if ($r) {
+          my @del_dirs = map { $dir . "/" . $_ } @dirs;
+          remove_tree( @del_dirs, { verbose => 1 } );
+      }
+      else {
+          foreach my $ldir (@dirs) {
+              if ( $self->y_n( 'Delete ' . $dir . "/" . $ldir . '?', 'y' ) ) {
+                  remove_tree( $dir . "/" . $ldir, { verbose => 1 } );
+              }
+          }
+      }
+  }
 
-    $self->SUPER::ACTION_install(@_);
+  $self->SUPER::ACTION_install(@_);
+}
+
+sub _find_installed_test_files{
+  my $self = shift;
+  
+  my @test_files = (
+  #    [file1, alias1],
+  #    [file2, alias2]
+  );
+  
+  my $inst = ExtUtils::Installed->new();
+  my (@modules) = $inst->modules();
+  
+  foreach my $module ( @modules ){  
+    my $path = File::Spec->catdir( qw/auto tests/);
+    
+    #Best effort
+    my @files = grep { m/$path/} $inst->files($module);
+    next unless scalar(@files) > 0 ;
+    my $dist_name;
+    ($dist_name = $module) =~ s/::/\-/g;
+    push @test_files, map{
+      my $alias = $_;
+      my $file = $_;
+      $alias =~ s/.*($dist_name\-[\d\.]+)/$1/;
+      [$_, File::Spec->catdir($alias) ]
+    } @files;
+  }
+  
+  return \@test_files;  
+}
+
+sub ACTION_testinc{
+  my $self = shift;
+  
+  my @tests = ();
+  
+  my $installed_tests = $self->_find_installed_test_files();
+
+  push @tests, @{$installed_tests};
+  push @tests, @{$self->find_test_files};
+
+  my $agg = $self->run_tap_harness( \@tests );
+  if ( $agg->has_errors ) {
+    die "Errors in testing.  Cannot continue.\n";
+  }  
 }
 1;
