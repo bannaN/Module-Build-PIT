@@ -1,0 +1,41 @@
+Module::Build::PIT
+
+Module::Build::PIT (Post Install Test) is an extension to
+Module::Build.  It allows you to test CPAN modules already installed
+(regression testing).  The main objective is to detect errors and
+inconsistencies in a production environement.
+
+INSTALLATION
+
+To install this module, run the following commands:
+
+  perl Build.PL
+  ./Build
+  ./Build test
+  ./Build install
+
+SUPPORT AND DOCUMENTATION
+
+After installing, you can find documentation for this module with the
+perldoc command.
+
+    perldoc Module::Build::PIT
+
+You can also look for information at:
+
+    RT, CPAN's request tracker
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Module-Build-PIT
+
+    AnnoCPAN, Annotated CPAN documentation
+        http://annocpan.org/dist/Module-Build-PIT
+
+    CPAN Ratings
+        http://cpanratings.perl.org/d/Module-Build-PIT
+
+    Search CPAN
+        http://search.cpan.org/dist/Module-Build-PIT
+
+COPYRIGHT AND LICENCE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.

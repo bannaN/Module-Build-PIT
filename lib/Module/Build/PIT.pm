@@ -6,7 +6,7 @@ use warnings;
 use base qw(Module::Build);
 use ExtUtils::Installed;
 
-my $VERSION = "0.001";
+our $VERSION = "0.002";
 
 sub test_dirs{
   my $self = shift;
@@ -193,4 +193,69 @@ sub ACTION_testinc{
     die "Errors in testing.  Cannot continue.\n";
   }  
 }
+
 1;
+
+__END__
+
+=pod
+
+=head1 NAME
+
+Module::Build::PIT
+
+Module::Build::PIT (Post Install Test) is an extension to
+Module::Build.  It allows you to test CPAN modules already installed
+(regression testing) as opposed to just test at install time.  The
+main objective is to detect errors and inconsistencies in a production
+environment resulting from changes in dependenciecs or the
+environment itself.
+
+=head1 SYNOPSIS
+
+  export PERL_INSTALL_TESTS=1
+  perl run_lib_tests.pl 
+
+=head1 OPTIONS
+
+None
+
+=head1 DESCRIPTION
+
+This module comes with a proposed directory structure that suggests
+all CPAN modules optionally can install their respective test files in
+the C<auto> directory.  This allows the test files to be run post
+install.  This will allow one to determine that a module (and all of
+its dependencies) continue to function as expected once installed. 
+
+The directory structure is as follows: 
+
+C<tree /usr/lib/perl5/auto/>
+
+=head1 EXAMPLE
+
+Imaging two modules I<Human> and I<Bear> both in version 0.01.  There
+is a C<Bear::ride> method that I<Human> depends on.  Imagine that
+I<Bear> is upgraded to version 0.02 where there is no C<Bear::ride>
+method.  This would cause I<Human> to stop functionning. 
+
+Module::Build::PIT aims to detect these kind of I<post install
+errors>.
+
+=head1 TODO
+
+=head1 LIMITATIONS
+
+This module currently only supports the linux operating system (C<$^O
+eq 'linux'>).
+
+=head1 SEE ALSO
+
+L<Module::Build>
+
+=head1 AUTHOR
+
+Joakim Tørmoen.
+
+=cut
+
