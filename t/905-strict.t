@@ -13,7 +13,7 @@ BEGIN {
   plan( skip_all => 'Test::Strict not installed; skipping' ) if $@;
 }
 
-all_perl_files_ok();
+all_perl_files_ok( qw/lib script/  );
 
 __END__
 

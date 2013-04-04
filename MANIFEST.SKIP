@@ -60,6 +60,9 @@ MYMETA\.json
 
 # Avoid Module::Build generated and utility files.
 \bBuild$
+
+# Avoid some temp html files created by some editors
+\.html$
 \bBuild.bat$
 \b_build
 \bBuild.COM$
@@ -69,3 +72,9 @@ MYMETA\.json
 
 # Avoid archives of this distribution
 \bModule-Build-PIT-[\d\.\_]+
+
+# Avoid some development stuff
+\bt.Modules.targz\b
+
+# Avoid a komodo config file
+\.komodoproject$

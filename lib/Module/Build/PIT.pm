@@ -8,101 +8,90 @@ use ExtUtils::Installed;
 
 our $VERSION = "0.002";
 
-sub test_dirs{
+sub test_dirs {
   my $self = shift;
-  return (ref($self->{properties}->{tests}) eq 'ARRAY') ? $self->{properties}->{tests} : [ $self->{properties}->{tests} ];
+  return ( ref( $self->{properties}->{tests} ) eq 'ARRAY' )
+    ? $self->{properties}->{tests}
+    : [ $self->{properties}->{tests} ];
 }
 
 sub process_t_files {
-    my $self = shift;
+  my $self = shift;
 
-    return unless $ENV{'PERL_INSTALL_TESTS'};
+  return unless $ENV{'PERL_INSTALL_TESTS'};
 
-    use Data::Dumper;
+  use Data::Dumper;
 
-    my $test_dirs = $self->test_dirs;
-    return unless $test_dirs;
+  my $test_dirs = $self->test_dirs;
+  return unless $test_dirs;
 
-    my $prefix = File::Spec->catdir(
-        $self->blib,
-        qw/lib auto tests/,
-        $self->dist_name() . "-" . $self->dist_version()
-    );
+  my $prefix = File::Spec->catdir( $self->blib, qw/lib auto tests/, $self->dist_name() . "-" . $self->dist_version() );
 
-    #Search the directories
-    my %files;
-    for my $dir (@$test_dirs) {
-        for my $f ( @{ $self->rscan_dir( $dir, sub { -f } ) } ) {
-            $f =~ s{\A.*?\Q$dir\E/}{};
-            $files{"$dir/$f"} = File::Spec->catdir( $prefix, $dir, $f );
-        }
+  #Search the directories
+  my %files;
+  for my $dir (@$test_dirs) {
+    for my $f ( @{ $self->rscan_dir( File::Spec->catdir( $self->base_dir, $dir ), sub { -f } ) } ) {
+      $f =~ s{\A.*\Q$dir\E/}{};
+      $files{ File::Spec->catdir( $dir, $f ) } =
+        File::Spec->catdir( $prefix, $dir, $f );
     }
-
-    while ( my ( $file, $dest ) = each %files ) {
-        $self->copy_if_modified(
-            from => $file,
-            to   => $dest
-        );
-    }
+  }
+  my @keys   = keys %files;
+  my @values = values %files;
+  while ( my ( $file, $dest ) = each %files ) {
+    $self->copy_if_modified( from => $file, to => $dest );
+  }
   return 1;
 }
 
 sub ACTION_fakeinstall {
-    my $self = shift;
+  my $self = shift;
 
-    use Data::Dumper;
+  use Data::Dumper;
 
-    if ( $ENV{'PERL_INSTALL_TESTS'} ) {
-        
-        my @path = qw/auto tests/;
-        my $dir = File::Spec->catdir( $self->install_destination('lib') );
-        for(@path){
-          $dir = File::Spec->catdir( $dir, $_ );
-          next if -e $dir;
-          die("Cannot create $dir ") if !mkdir($dir);
-        }
+  if ( $ENV{'PERL_INSTALL_TESTS'} ) {
 
-        my $dist_name = $self->dist_name();
-
-        #Looking for old tests
-        opendir( my $dh, $dir ) || die "can't opendir " . $dir . ": $!";
-        my @dirs = grep { /^$dist_name/ && -d File::Spec->catdir( $dir, $_ ) } readdir($dh);
-        closedir $dh;
-
-        my $r;
-
-        if ( scalar( @dirs > 3 ) ) {
-            $r = $self->y_n(
-                'You have a large number of test for old versions of '
-                    . $self->dist_name()
-                    . '. Do you want to delete all the old tests? (This is a fakeinstall. Action will _NOT_ be executed)',
-                'y'
-            );
-        }
-
-        if ($r) {
-            print "Deleting " . File::Spec->catdir( $dir, $_ ) for @dirs;
-        }
-        else {
-            foreach my $ldir (@dirs) {
-                if (
-                    $self->y_n(
-                        'Delete '
-                            . File::Spec->catdir( $dir, $ldir )
-                            . '? (This is a fakeinstall. Action will not be executed)',
-                        'y'
-                    )
-                    )
-                {
-                    print "Deleting " . File::Spec->catdir( $dir, $ldir ) . "\n";
-                }
-            }
-        }
-
+    my @path = qw/auto tests/;
+    my $dir  = File::Spec->catdir( $self->install_destination('lib') );
+    for (@path) {
+      $dir = File::Spec->catdir( $dir, $_ );
+      next if -e $dir;
+      die("Cannot create $dir ") if !mkdir($dir);
     }
 
-    #Retval is the return structure from ExtUtils::Install::install
-    return $self->SUPER::ACTION_fakeinstall(@_);
+    my $dist_name = $self->dist_name();
+
+    #Looking for old tests
+    opendir( my $dh, $dir ) || die "can't opendir " . $dir . ": $!";
+    my @dirs =
+      grep { /^$dist_name/ && -d File::Spec->catdir( $dir, $_ ) } readdir($dh);
+    closedir $dh;
+
+    my $r;
+
+    if ( scalar( @dirs > 3 ) ) {
+      $r = $self->y_n(
+        'You have a large number of test for old versions of '
+          . $self->dist_name()
+          . '. Do you want to delete all the old tests? (This is a fakeinstall. Action will _NOT_ be executed)',
+        'y'
+      );
+    }
+
+    if ($r) {
+      print "Deleting " . File::Spec->catdir( $dir, $_ ) for @dirs;
+    } else {
+      foreach my $ldir (@dirs) {
+        if ( $self->y_n( 'Delete ' . File::Spec->catdir( $dir, $ldir ) . '? (This is a fakeinstall. Action will not be executed)', 'y' ) ) {
+          print "Deleting " . File::Spec->catdir( $dir, $ldir ) . "\n";
+        }
+      }
+    }
+
+  }
+
+  #Retval is the return structure from ExtUtils::Install::install
+  return $self->SUPER::ACTION_fakeinstall(@_);
 }
 
 sub ACTION_install {
@@ -114,92 +103,98 @@ sub ACTION_install {
   use Data::Dumper;
 
   if ( $ENV{PERL_INSTALL_TESTS} ) {
-      
-      my @path = qw/auto tests/;
-      my $dir = File::Spec->catdir( $self->install_destination('lib') );
-      for(@path){
-        $dir = File::Spec->catdir( $dir, $_ );
-        next if -e $dir;
-        die("Cannot create $dir ") if !mkdir($dir);
-      }
-    
-      my $dist_name = $self->dist_name;
-      opendir( my $dh, $dir ) || die "can't opendir " . $dir . ": $!";
-      my @dirs = grep { /^$dist_name/ && -d File::Spec->catdir( $dir, $_ ) } readdir($dh);
-      closedir $dh;
 
-      my $r;
+    my @path = qw/auto tests/;
+    my $dir  = File::Spec->catdir( $self->install_destination('lib') );
+    for (@path) {
+      $dir = File::Spec->catdir( $dir, $_ );
+      next if -e $dir;
+      die("Cannot create $dir ") if !mkdir($dir);
+    }
 
-      if ( scalar( @dirs > 1 ) ) {
-          $r = $self->y_n(
-              'You have tests for a large number('
-                  . scalar(@dirs)
-                  . ') of versions of '
-                  . $self->dist_name()
-                  . ' installed. Do you want to delete all the old tests?',
-              'y'
-          );
+    my $dist_name = $self->dist_name;
+    opendir( my $dh, $dir ) || die "can't opendir " . $dir . ": $!";
+    my @dirs =
+      grep { /^$dist_name/ && -d File::Spec->catdir( $dir, $_ ) } readdir($dh);
+    closedir $dh;
+
+    my $r;
+
+    if ( scalar( @dirs > 1 ) ) {
+      $r = $self->y_n(
+        'You have tests for a large number('
+          . scalar(@dirs)
+          . ') of versions of '
+          . $self->dist_name()
+          . ' installed. Do you want to delete all the old tests?',
+        'y'
+      );
+    }
+    if ($r) {
+      my @del_dirs = map { File::Spec->catdir( $dir, $_ ) } @dirs;
+      remove_tree( @del_dirs, { verbose => 1 } );
+    } else {
+      foreach my $ldir (@dirs) {
+        if ( $self->y_n( 'Delete ' . File::Spec->catdir( $dir, $ldir ) . '?', 'y' ) ) {
+          remove_tree( File::Spec->catdir( $dir, $ldir ), { verbose => 1 } );
+        }
       }
-      if ($r) {
-          my @del_dirs = map { $dir . "/" . $_ } @dirs;
-          remove_tree( @del_dirs, { verbose => 1 } );
-      }
-      else {
-          foreach my $ldir (@dirs) {
-              if ( $self->y_n( 'Delete ' . $dir . "/" . $ldir . '?', 'y' ) ) {
-                  remove_tree( $dir . "/" . $ldir, { verbose => 1 } );
-              }
-          }
-      }
+    }
   }
 
   return $self->SUPER::ACTION_install(@_);
 }
 
-sub _find_installed_test_files{
-  my $self = shift;
-  
-  my @test_files = (
-  #    [file1, alias1],
-  #    [file2, alias2]
-  );
-  
-  my $inst = ExtUtils::Installed->new();
-  my (@modules) = $inst->modules();
-  
-  foreach my $module ( @modules ){  
-    my $path = File::Spec->catdir( qw/auto tests/);
-    
-    #Best effort
-    my @files = grep { m/$path/} $inst->files($module);
-    next unless scalar(@files) > 0 ;
-    my $dist_name;
-    ($dist_name = $module) =~ s/::/\-/g;
-    push @test_files, map{
-      my $alias = $_;
-      my $file = $_;
-      $alias =~ s/.*($dist_name\-[\d\.]+)/$1/;
-      [$_, File::Spec->catdir($alias) ]
-    } @files;
-  }
-  
-  return \@test_files;  
+sub _get_ext_installed_obj {
+  return ExtUtils::Installed->new();
 }
 
-sub ACTION_testinc{
+sub _find_installed_test_files {
   my $self = shift;
-  
-  my @tests = ();
-  
-  my $installed_tests = $self->_find_installed_test_files();
 
-  push @tests, @{$installed_tests};
-  push @tests, @{$self->find_test_files};
+  my @test_files = (
+
+    #    [file1, alias1],
+    #    [file2, alias2]
+  );
+
+  my $inst = $self->_get_ext_installed_obj();
+  my (@modules) = $inst->modules();
+
+  foreach my $module (@modules) {
+    my $path = File::Spec->catdir(qw/auto tests/);
+
+    #Best effort
+    my @files = grep { defined && m/$path/ } $inst->files($module);
+    next unless scalar(@files) > 0;
+    my $dist_name;
+    ( $dist_name = $module ) =~ s/::/\-/g;
+    push @test_files, map {
+      my $alias = $_;
+      my $file  = $_;
+      $alias =~ s/.*($dist_name\-[\d\.]+)/$1/;
+      [ $_, File::Spec->catdir($alias) ]
+    } @files;
+  }
+
+  return @test_files;
+}
+
+sub ACTION_testinc {
+  my $self = shift;
+
+  my @tests = ();
+
+  my @installed_tests = $self->_find_installed_test_files();
+
+  push @tests, @installed_tests;
+  push @tests, @{ $self->find_test_files };
 
   my $agg = $self->run_tap_harness( \@tests );
   if ( $agg->has_errors ) {
-    die "Errors in testing.  Cannot continue.\n";
-  }  
+    die "Errors in testing. Cannot continue.\n";
+  }
+  return 1;
 }
 
 1;
@@ -250,7 +245,59 @@ method.  This would cause I<Human> to stop functionning.
 Module::Build::PIT aims to detect these kind of I<post install
 errors>.
 
+=head1 METHODS
+
+=over 4
+
+=item ACTION_fakeinstall()
+
+The method tries to mimic the actions of a real installation.
+
+It does this by:
+- Check if the PERL_INSTALL_TESTS environment variable is set
+- Check wheter or not the auto/tests directory exists under your lib install destination
+- !! CREATES the auto/tests folders if they do not exists !! (This action is actually executed)
+- Reads the auto/tests directory in order to check if you have any old versions of tests for this module
+- Asks you if you want to delete the old tests if they exists
+- Prints a delete statement if you answer yes to the question above. The delete action is not executed
+- Calls the ACTION_fakeinstall method of L<Module::Build>
+
+If the environment variable PERL_INSTALL_TESTS is not set it will just call the ACTION_fakeinstall method of L<Module::Build> 
+
+=item ACTION_install()
+
+This method does the actual install.
+
+- Check if the PERL_INSTALL_TESTS environment variable is set
+- Check wheter or not the auto/tests directory exists under your lib install destination
+- CREATES the auto/tests folders if they do not exists !! (This action is actually executed)
+- Reads the auto/tests directory in order to check if you have any old versions of tests for this module
+- Asks you if you want to delete the old tests if they exists, and delete them if you accept
+- Calls the ACTION_install method of L<Module::Build>
+
+If the enironment variable PERL_INSTALL_TESTS is not set it will just call the ACTION_install method of L<Module::Build>
+
+=item process_t_files()
+
+The method copies the configured test files into the blib directory if the environment variable PERL_INSTALL_TESTS is set.
+The test files are copied to a path like blib/lib/auto/tests/Some-Module-0.01/
+
+=item test_dirs
+
+The methods returns an array ref of folders (relative to the base dir) that contains test files and or data.
+The array ref can be set with the tests keyword in the Module::Build configuration.
+
+=item ACTION_testinc
+
+Method for running the tests for modules in your current @INC (If they have installed their test files)
+
+Useful for checking that the current module you are installing isnt going to break the functionality of some other module.
+
+=back
+
 =head1 TODO
+
+A huge amount of stuff
 
 =head1 LIMITATIONS
 
