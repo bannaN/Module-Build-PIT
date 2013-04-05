@@ -20,8 +20,6 @@ sub process_t_files {
 
   return unless $ENV{'PERL_INSTALL_TESTS'};
 
-  use Data::Dumper;
-
   my $test_dirs = $self->test_dirs;
   return unless $test_dirs;
 
@@ -100,7 +98,6 @@ sub ACTION_install {
   $self->depends_on('build');
 
   use File::Path qw( remove_tree );
-  use Data::Dumper;
 
   if ( $ENV{PERL_INSTALL_TESTS} ) {
 
