@@ -16,10 +16,17 @@ my $builder = Module::Build->new(
     build_requires => {
         'Test::More' => 0,
         'Test::Warn' => 0,
-        'File::Copy::Recursive' => 0
+        'File::Copy::Recursive' => 0,
+        'Test::MockObject::Extends' => 0,
+        'Test::Exception' => 0,
     },
     requires => {
       'version' => 0,
+      'ExtUtils::Installed' => 0,
+      'File::Spec' => 0,
+      'Cwd' => 0,
+      'Furl' => 0
+      
     },
     verbose => 1,
     tests => 't',
