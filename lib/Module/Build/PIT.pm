@@ -143,7 +143,7 @@ sub ACTION_install {
 }
 
 sub ACTION_installtests{
-  my $self = @_;
+  my ($self) = @_;
   
   local $ENV{PERL_INSTALL_TESTS} = 1;
   return $self->depends_on('install');
@@ -172,7 +172,6 @@ sub _find_installed_test_files {
     foreach my $inst_module (@installed_modules){
       push(@modules, $inst_module) if grep { m/^\Q$inst_module\E$/ } @wanted_modules;
     }
-    
   }else{
     @modules = @installed_modules;
   }
@@ -208,6 +207,16 @@ sub _find_reverse_dependencies{
 sub ACTION_testinc {
   my $self = shift;
 
+
+  $self->depends_on('code');
+
+  # Protect others against our @INC changes
+  local @INC = @INC;
+
+  # Make sure we test the module in blib/
+  unshift @INC, (File::Spec->catdir($self->base_dir, $self->blib, 'lib'),
+                 File::Spec->catdir($self->base_dir, $self->blib, 'arch'));
+
   my @tests = ();
 
   my @installed_tests = $self->_find_installed_test_files();
@@ -224,6 +233,15 @@ sub ACTION_testinc {
 
 sub ACTION_testrdeps{
   my ($self) = @_;
+  
+  $self->depends_on('code');
+
+  # Protect others against our @INC changes
+  local @INC = @INC;
+
+  # Make sure we test the module in blib/
+  unshift @INC, (File::Spec->catdir($self->base_dir, $self->blib, 'lib'),
+                 File::Spec->catdir($self->base_dir, $self->blib, 'arch'));  
   
   my @rdeps = $self->_find_reverse_dependencies($self->module_name());
   
