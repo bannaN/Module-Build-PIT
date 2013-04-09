@@ -142,12 +142,20 @@ sub ACTION_install {
   return $self->SUPER::ACTION_install(@_);
 }
 
+sub ACTION_installtests{
+  my $self = @_;
+  
+  local $ENV{PERL_INSTALL_TESTS} = 1;
+  $self->depends_on('install');
+  
+}
+
 sub _get_ext_installed_obj {
   return ExtUtils::Installed->new();
 }
 
 sub _find_installed_test_files {
-  my $self = shift;
+  my ($self, @wanted_modules) = @_;
 
   my @test_files = (
 
@@ -156,7 +164,19 @@ sub _find_installed_test_files {
   );
 
   my $inst = $self->_get_ext_installed_obj();
-  my (@modules) = $inst->modules();
+  my (@installed_modules) = $inst->modules();
+  my @modules = ();
+
+  if(scalar(@wanted_modules) > 0){
+    #keep the duplicates in @installed_modules
+    my %wanted = map { $_ => 1 } @wanted_modules;
+    foreach my $inst_module (@installed_modules){
+      push(@modules, $inst_module) if grep { m/^\Q$inst_module\E$/ } @wanted_modules;
+    }
+    
+  }else{
+    @modules = @installed_modules;
+  }
 
   foreach my $module (@modules) {
     my $path = File::Spec->catdir(qw/auto tests/);
@@ -177,6 +197,15 @@ sub _find_installed_test_files {
   return @test_files;
 }
 
+sub _find_reverse_dependencies{
+  my ($self, $dist_name) = @_;
+  
+  #A fake method, just to illustrate the command behaviour
+  return ('Bear') if $dist_name eq 'Human';
+  
+  return;
+}
+
 sub ACTION_testinc {
   my $self = shift;
 
@@ -192,6 +221,25 @@ sub ACTION_testinc {
     die "Errors in testing. Cannot continue.\n";
   }
   return 1;
+}
+
+sub ACTION_testrdeps{
+  my ($self) = @_;
+  
+  my @rdeps = $self->_find_reverse_dependencies($self->module_name());
+  
+  my @tests = ();
+  my @installed_tests = $self->_find_installed_test_files(@rdeps);
+  
+  push @tests, @installed_tests;
+  push @tests, @{ $self->find_test_files };
+  
+  my $agg = $self->run_tap_harness( \@tests );
+  if ( $agg->has_errors ) {
+    die "Errors in testing. Cannot continue.\n";
+  }
+  return 1;
+  
 }
 
 1;
@@ -274,21 +322,30 @@ This method does the actual install.
 
 If the enironment variable PERL_INSTALL_TESTS is not set it will just call the ACTION_install method of L<Module::Build>
 
+=item ACTION_installtests()
+
+Just sets the PERL_INSTALL_TESTS=1 and runs install
+
 =item process_t_files()
 
 The method copies the configured test files into the blib directory if the environment variable PERL_INSTALL_TESTS is set.
 The test files are copied to a path like blib/lib/auto/tests/Some-Module-0.01/
 
-=item test_dirs
+=item test_dirs()
 
 The methods returns an array ref of folders (relative to the base dir) that contains test files and or data.
 The array ref can be set with the tests keyword in the Module::Build configuration.
 
-=item ACTION_testinc
+=item ACTION_testinc()
 
 Method for running the tests for modules in your current @INC (If they have installed their test files)
 
 Useful for checking that the current module you are installing isnt going to break the functionality of some other module.
+
+=item ACTION_testrdeps()
+
+Method for running tests for all reverse dependencies of the module currently being installed.
+At this point in time this is not functional, its only a dummy method.
 
 =back
 
