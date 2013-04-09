@@ -146,8 +146,7 @@ sub ACTION_installtests{
   my $self = @_;
   
   local $ENV{PERL_INSTALL_TESTS} = 1;
-  $self->depends_on('install');
-  
+  return $self->depends_on('install');
 }
 
 sub _get_ext_installed_obj {
