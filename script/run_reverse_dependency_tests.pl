@@ -80,6 +80,39 @@ $formatter->summary($aggregator);
 
 __END__
 
+=pod
+
+=encoding utf-8
+
+=head1 NAME
+
+  run_reverse_dependency_tests.pl - Run tests for the modules that depends on the provided one
+
 =head1 SYNOPSIS
 
-    % cpan-reverse-deps Text::Xslate
+  perl run_reverse_dependency_tests.pl Some::Module
+
+=head1 OPTIONS
+
+None
+
+=head1 DESCRIPTION
+
+Script which uses the Metacpan remote dependency search to find modules that depends on the provided one and then runs the tests
+these modules if the tests are installed.
+
+=head1 TODO
+
+a lot
+
+=head1 SEE ALSO
+
+L<Module::Build::PIT>
+L<Module::Build>
+
+=head1 AUTHOR
+
+Joakim Tørmoen
+
+=cut
+

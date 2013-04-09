@@ -48,13 +48,14 @@ __END__
 
 =pod
 
+=encoding utf-8
+
 =head1 NAME
 
-  run_lib_tests.pl - Run test for all installed modules in "lib".
+  run_lib_tests.pl - Run test for all installed modules(Reported by ExtUtils::Installed) in @INC.
 
 =head1 SYNOPSIS
 
-  export PERL_INSTALL_TESTS=1
   perl run_lib_tests.pl 
 
 =head1 OPTIONS
@@ -66,6 +67,8 @@ None
 
 =head1 TODO
 
+a lot
+
 =head1 SEE ALSO
 
 L<Module::Build::PIT>
@@ -73,7 +76,7 @@ L<Module::Build>
 
 =head1 AUTHOR
 
-Joakim Tørmoen.
+Joakim Tørmoen
 
 =cut
 
