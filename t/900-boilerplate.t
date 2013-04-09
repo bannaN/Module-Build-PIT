@@ -25,29 +25,26 @@ sub not_in_file_ok {
   }
 
   if ( scalar( keys %violated ) ) {
-    fail( "$filename contains boilerplate text" );
+    fail("$filename contains boilerplate text");
     diag "$_ appears on lines @{$violated{$_}}" for keys %violated;
   } else {
-    pass( "$filename contains no boilerplate text" );
+    pass("$filename contains no boilerplate text");
   }
 }
 
 sub module_boilerplate_ok {
-  my ( $module ) = @_;
+  my ($module) = @_;
   not_in_file_ok(
-    $module => 'the great new $MODULENAME' => qr/ - The great new /,
+    $module                    => 'the great new $MODULENAME' => qr/ - The great new /,
     'boilerplate description'  => qr/Quick summary of what the module/,
     'stub function definition' => qr/function[12]/,
   );
 }
 
-not_in_file_ok(
-  README => "The README is used..." => qr/The README is used/,
-  "'version information here'" => qr/to provide version information/,
-);
+not_in_file_ok( README => "The README is used..." => qr/The README is used/, "'version information here'" => qr/to provide version information/, );
 
 not_in_file_ok( Changes => "placeholder date/time" => qr(Date/time) );
 
-module_boilerplate_ok( 'lib/Module/Build/PIT.pm' );
+module_boilerplate_ok('lib/Module/Build/PIT.pm');
 
 __END__

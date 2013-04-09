@@ -7,4 +7,4 @@ use_ok('Human');
 
 my $obj = Human->new();
 
-isa_ok($obj, 'Human');
+isa_ok( $obj, 'Human' );

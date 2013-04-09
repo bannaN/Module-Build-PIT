@@ -4,7 +4,7 @@ use Test::More;
 
 BEGIN {
   plan( skip_all => 'AUTHOR_TEST must be set for pod test; skipping' )
-    if ( !$ENV { 'AUTHOR_TEST' } );
+    if ( !$ENV{'AUTHOR_TEST'} );
 }
 
 # Ensure a recent version of Test::Pod

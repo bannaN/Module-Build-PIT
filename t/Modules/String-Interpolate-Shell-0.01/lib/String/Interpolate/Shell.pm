@@ -36,161 +36,157 @@ our $VERSION = 0.01;
 
 sub _extract {
 
-    extract_multiple( $_[0],
-		      [
-		       qr/\s+/,
-		       qr/\\(\\)/,
-		       qr/\\(\$)/,
-		       { V => qr/\$(\w+)/ },
-		       { B => sub { (extract_bracketed( $_[0], '{}', qr/\$/ ))[0] } },
-		      ] );
+  extract_multiple(
+    $_[0],
+    [
+      qr/\s+/,
+      qr/\\(\\)/,
+      qr/\\(\$)/,
+      { V => qr/\$(\w+)/ },
+      {
+        B => sub { ( extract_bracketed( $_[0], '{}', qr/\$/ ) )[0] }
+      },
+    ]
+  );
 }
 
 sub _handle_undef {
 
-    my ( $var, $q, $attr, $rep ) = @_;
+  my ( $var, $q, $attr, $rep ) = @_;
 
-    ## no critic(ProhibitAccessOfPrivateData)
+  ## no critic(ProhibitAccessOfPrivateData)
 
-    return $var->{$q} if defined $var->{$q};
+  return $var->{$q} if defined $var->{$q};
 
-    carp( sprintf( $attr->{undef_message}, $rep) )
-      if $attr->{undef_verbosity} eq 'warn';
+  carp( sprintf( $attr->{undef_message}, $rep ) )
+    if $attr->{undef_verbosity} eq 'warn';
 
-    croak( sprintf( $attr->{undef_message}, $rep) )
-      if $attr->{undef_verbosity} eq 'fatal';
+  croak( sprintf( $attr->{undef_message}, $rep ) )
+    if $attr->{undef_verbosity} eq 'fatal';
 
-    return $rep if $attr->{undef_value} eq 'ignore';
+  return $rep if $attr->{undef_value} eq 'ignore';
 }
 
-sub strinterp{
+sub strinterp {
 
-    my ( $text, $var, $attr ) = @_;
+  my ( $text, $var, $attr ) = @_;
 
-    ## no critic(ProhibitAccessOfPrivateData)
-    $attr = check( {
-		    undef_value => { allow => [ qw[ ignore remove ] ],
-				     default => 'ignore' },
-		    undef_verbosity => { allow => [ qw[ silent warn fatal ] ],
-					 default => 'silent' },
-		    undef_message => { default => "undefined variable: %s\n" },
-		    }, $attr || {} )
-      or croak( "error parsing arguments: ", Params::Check::last_error() );
+  ## no critic(ProhibitAccessOfPrivateData)
+  $attr = check(
+    {
+      undef_value     => { allow   => [qw[ ignore remove ]],     default => 'ignore' },
+      undef_verbosity => { allow   => [qw[ silent warn fatal ]], default => 'silent' },
+      undef_message   => { default => "undefined variable: %s\n" },
+    },
+    $attr || {}
+  ) or croak( "error parsing arguments: ", Params::Check::last_error() );
 
-    my @matches;
+  my @matches;
 
-    for my $matchstr ( _extract($text ) ) {
+  for my $matchstr ( _extract($text) ) {
 
-	my $ref = ref $matchstr;
+    my $ref = ref $matchstr;
 
-	if ( 'B' eq $ref ) {
+    if ( 'B' eq $ref ) {
 
-	    # remove enclosing brackets
-	    my $match = substr( $$matchstr, 1,-1 );
+      # remove enclosing brackets
+      my $match = substr( $$matchstr, 1, -1 );
 
-	    # see if there's a 'shell' modifier expression
-	    my ( $ind, $q, $modf, $rest ) = $match =~ /^(!)?(\w+)(:[-?=+~:])?(.*)/;
+      # see if there's a 'shell' modifier expression
+      my ( $ind, $q, $modf, $rest ) = $match =~ /^(!)?(\w+)(:[-?=+~:])?(.*)/;
 
-	    # if there's no modifier but there is trailing cruft, it's an error
-	    die( "unrecognizeable variable name: \${$match}\n")
-		if ! defined $modf && $rest ne '';
+      # if there's no modifier but there is trailing cruft, it's an error
+      die("unrecognizeable variable name: \${$match}\n")
+        if !defined $modf && $rest ne '';
 
-	    # if indirect flag is set, expand variable
-	    if ( defined $ind ) {
+      # if indirect flag is set, expand variable
+      if ( defined $ind ) {
 
-		if ( defined $var->{$q} ) {
-		    $q = $var->{$q};
-		}
-		else
-		{
-		    push @matches, _handle_undef( $attr, '$' . $$matchstr );
-		    next;
-		}
-	    }
+        if ( defined $var->{$q} ) {
+          $q = $var->{$q};
+        } else {
+          push @matches, _handle_undef( $attr, '$' . $$matchstr );
+          next;
+        }
+      }
 
+      if ( !defined $modf ) {
 
-	    if ( ! defined $modf ) {
+        push @matches, _handle_undef( $var, $q, $attr, '$' . $$matchstr );
+      }
 
-		push @matches, _handle_undef( $var, $q, $attr, '$' . $$matchstr );
-	    }
+      elsif ( ':?' eq $modf ) {
 
-	    elsif ( ':?' eq $modf ) {
+        local $attr->{undef_verbosity} = 'fatal';
+        local $attr->{undef_message}   = $rest;
 
-		local $attr->{undef_verbosity} = 'fatal';
-		local $attr->{undef_message} = $rest;
+        push @matches, _handle_undef( $var, $q, $attr, '$' . $$matchstr );
 
-		push @matches, _handle_undef( $var, $q, $attr, '$' . $$matchstr );
+      } elsif ( ':-' eq $modf ) {
 
-	    }
-	    elsif ( ':-' eq $modf ) {
+        push @matches, defined $var->{$q} ? $var->{$q} : strinterp( $rest, $var, $attr );
 
-		push @matches, defined $var->{$q} ? $var->{$q} : strinterp( $rest, $var, $attr );
+      }
 
-	    }
+      elsif ( ':=' eq $modf ) {
 
-	    elsif ( ':=' eq $modf ) {
+        $var->{$q} = strinterp( $rest, $var, $attr )
+          unless defined $var->{$q};
+        push @matches, $var->{$q};
 
+      }
 
-		$var->{$q} = strinterp( $rest, $var, $attr )
-		  unless defined $var->{$q};
-		push @matches, $var->{$q};
+      elsif ( ':+' eq $modf ) {
 
-	    }
+        push @matches, strinterp( $rest, $var, $attr )
+          if defined $var->{$q};
 
-	    elsif ( ':+' eq $modf ) {
+      }
 
-		push @matches, strinterp( $rest, $var, $attr )
-		  if defined $var->{$q};
+      elsif ( '::' eq $modf ) {
 
-	    }
+        push @matches, sprintf( $rest, _handle_undef( $var, $q, $attr, '$' . $$matchstr ) );
 
-	    elsif ( '::' eq $modf ) {
+      }
 
-		push @matches, sprintf( $rest,  _handle_undef( $var, $q, $attr, '$' . $$matchstr ) );
+      elsif ( ':~' eq $modf ) {
 
-	    }
+        my ( $expr, $xtra, $op ) = ( extract_quotelike($rest) )[ 0, 1, 3 ];
+        die("unable to parse variable substitution command: $rest\n")
+          if $xtra !~ /^\s*$/ or $op !~ /^(s|tr|y)$/;
 
-	    elsif ( ':~' eq $modf ) {
+        my $t = $var->{$q};
+        ## no critic(ProhibitStringyEval)
+        eval "\$t =~ $expr";
+        die $@ if $@;
 
-		my ( $expr, $xtra, $op ) = (extract_quotelike( $rest ))[0,1,3];
-		die( "unable to parse variable substitution command: $rest\n" )
-		    if $xtra !~ /^\s*$/ or $op !~ /^(s|tr|y)$/;
+        push @matches, $t;
 
-		my $t = $var->{$q};
-		## no critic(ProhibitStringyEval)
-		eval "\$t =~ $expr";
-		die $@ if $@;
+      }
 
-		push @matches, $t;
+      else { die("internal error") }
 
-	    }
+    } elsif ( 'V' eq $ref ) {
 
-	    else { die( "internal error" ) }
+      my $q = $$matchstr;
 
-	}
-	elsif ( 'V' eq $ref ) {
-
-	    my $q = $$matchstr;
-
-	    push @matches, _handle_undef( $var, $q, $attr, "\$$q" );
-
-	}
-
-	elsif ( $ref ) {
-
-	    push @matches, $$matchstr;
-
-	}
-	else {
-
-	    push @matches, $matchstr;
-
-	}
-
+      push @matches, _handle_undef( $var, $q, $attr, "\$$q" );
 
     }
 
-    return join('', @matches);
+    elsif ($ref) {
+
+      push @matches, $$matchstr;
+
+    } else {
+
+      push @matches, $matchstr;
+
+    }
+
+  }
+
+  return join( '', @matches );
 
 }
 

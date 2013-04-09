@@ -5,11 +5,9 @@ use warnings;
 
 use Test::More tests => 1;
 
-BEGIN { 
-    use_ok( 'String::Interpolate::Shell' );
+BEGIN {
+  use_ok('String::Interpolate::Shell');
 }
 
-
-
-diag( "Testing String::Interpolate::Shell $String::Interpolate::Shell::VERSION, Perl $], $^X" );
+diag("Testing String::Interpolate::Shell $String::Interpolate::Shell::VERSION, Perl $], $^X");
 

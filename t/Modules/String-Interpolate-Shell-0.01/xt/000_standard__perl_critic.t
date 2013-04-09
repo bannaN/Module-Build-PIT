@@ -9,15 +9,16 @@ use UNIVERSAL::require;
 use Test::More;
 
 my %opt;
-my $rc_file = File::Spec->catfile($Bin, 'perlcriticrc');
+my $rc_file = File::Spec->catfile( $Bin, 'perlcriticrc' );
 $opt{'-profile'} = $rc_file if -r $rc_file;
 
-if (Perl::Critic->require('1.078') &&
-    Test::Perl::Critic->require &&
-    Test::Perl::Critic->import(%opt)) {
+if ( Perl::Critic->require('1.078')
+  && Test::Perl::Critic->require
+  && Test::Perl::Critic->import(%opt) )
+{
 
-    all_critic_ok("lib");
+  all_critic_ok("lib");
 } else {
-    plan skip_all => $@;
+  plan skip_all => $@;
 }
-    
+

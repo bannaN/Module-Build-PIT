@@ -8,6 +8,7 @@ use TAP::Parser::Aggregator;
 use Data::Dumper;
 
 my @test_files = (
+
   #    [file1, alias1],
   #    [file2, alias2]
 );
@@ -22,7 +23,7 @@ foreach my $module (@modules) {
   my @files = grep { m/$path/ } $inst->files($module);
   next unless scalar(@files) > 0;
   my $dist_name;
-  ($dist_name = $module) =~ s/::/\-/g;
+  ( $dist_name = $module ) =~ s/::/\-/g;
   push @test_files, map {
     my $alias = $_;
     my $file  = $_;
@@ -32,13 +33,13 @@ foreach my $module (@modules) {
 }
 
 my $formatter = TAP::Formatter::Console->new;
-my $harness = TAP::Harness->new({ formatter => $formatter });
+my $harness = TAP::Harness->new( { formatter => $formatter } );
 
 my $aggregator = TAP::Parser::Aggregator->new;
 
 $aggregator->start();
 foreach my $test (@test_files) {
-  $harness->aggregate_tests($aggregator, $test);
+  $harness->aggregate_tests( $aggregator, $test );
 }
 $aggregator->stop();
 $formatter->summary($aggregator);

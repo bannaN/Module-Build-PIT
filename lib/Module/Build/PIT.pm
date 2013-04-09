@@ -142,9 +142,9 @@ sub ACTION_install {
   return $self->SUPER::ACTION_install(@_);
 }
 
-sub ACTION_installtests{
+sub ACTION_installtests {
   my ($self) = @_;
-  
+
   local $ENV{PERL_INSTALL_TESTS} = 1;
   return $self->depends_on('install');
 }
@@ -154,7 +154,7 @@ sub _get_ext_installed_obj {
 }
 
 sub _find_installed_test_files {
-  my ($self, @wanted_modules) = @_;
+  my ( $self, @wanted_modules ) = @_;
 
   my @test_files = (
 
@@ -162,17 +162,18 @@ sub _find_installed_test_files {
     #    [file2, alias2]
   );
 
-  my $inst = $self->_get_ext_installed_obj();
+  my $inst                = $self->_get_ext_installed_obj();
   my (@installed_modules) = $inst->modules();
-  my @modules = ();
+  my @modules             = ();
 
-  if(scalar(@wanted_modules) > 0){
+  if ( scalar(@wanted_modules) > 0 ) {
+
     #keep the duplicates in @installed_modules
     my %wanted = map { $_ => 1 } @wanted_modules;
-    foreach my $inst_module (@installed_modules){
-      push(@modules, $inst_module) if grep { m/^\Q$inst_module\E$/ } @wanted_modules;
+    foreach my $inst_module (@installed_modules) {
+      push( @modules, $inst_module ) if grep { m/^\Q$inst_module\E$/ } @wanted_modules;
     }
-  }else{
+  } else {
     @modules = @installed_modules;
   }
 
@@ -195,18 +196,17 @@ sub _find_installed_test_files {
   return @test_files;
 }
 
-sub _find_reverse_dependencies{
-  my ($self, $dist_name) = @_;
-  
+sub _find_reverse_dependencies {
+  my ( $self, $dist_name ) = @_;
+
   #A fake method, just to illustrate the command behaviour
   return ('Bear') if $dist_name eq 'Human';
-  
+
   return;
 }
 
 sub ACTION_testinc {
   my $self = shift;
-
 
   $self->depends_on('code');
 
@@ -214,8 +214,7 @@ sub ACTION_testinc {
   local @INC = @INC;
 
   # Make sure we test the module in blib/
-  unshift @INC, (File::Spec->catdir($self->base_dir, $self->blib, 'lib'),
-                 File::Spec->catdir($self->base_dir, $self->blib, 'arch'));
+  unshift @INC, ( File::Spec->catdir( $self->base_dir, $self->blib, 'lib' ), File::Spec->catdir( $self->base_dir, $self->blib, 'arch' ) );
 
   my @tests = ();
 
@@ -231,32 +230,31 @@ sub ACTION_testinc {
   return 1;
 }
 
-sub ACTION_testrdeps{
+sub ACTION_testrdeps {
   my ($self) = @_;
-  
+
   $self->depends_on('code');
 
   # Protect others against our @INC changes
   local @INC = @INC;
 
   # Make sure we test the module in blib/
-  unshift @INC, (File::Spec->catdir($self->base_dir, $self->blib, 'lib'),
-                 File::Spec->catdir($self->base_dir, $self->blib, 'arch'));  
-  
-  my @rdeps = $self->_find_reverse_dependencies($self->module_name());
-  
-  my @tests = ();
+  unshift @INC, ( File::Spec->catdir( $self->base_dir, $self->blib, 'lib' ), File::Spec->catdir( $self->base_dir, $self->blib, 'arch' ) );
+
+  my @rdeps = $self->_find_reverse_dependencies( $self->module_name() );
+
+  my @tests           = ();
   my @installed_tests = $self->_find_installed_test_files(@rdeps);
-  
+
   push @tests, @installed_tests;
   push @tests, @{ $self->find_test_files };
-  
+
   my $agg = $self->run_tap_harness( \@tests );
   if ( $agg->has_errors ) {
     die "Errors in testing. Cannot continue.\n";
   }
   return 1;
-  
+
 }
 
 1;

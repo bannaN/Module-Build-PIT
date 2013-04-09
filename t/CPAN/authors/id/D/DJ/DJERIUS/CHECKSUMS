@@ -1,0 +1,11 @@
+# CHECKSUMS file written on Wed Apr  3 14:15:30 2013 GMT by CPAN::Checksums (v2.08)
+$cksum = {
+  'String-Interpolate-Shell-0.01.tar.gz' => {
+    'md5' => 'd41d8cd98f00b204e9800998ecf8427e',
+    'md5-ungz' => 'd41d8cd98f00b204e9800998ecf8427e',
+    'mtime' => '2013-04-03',
+    'sha256' => 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    'sha256-ungz' => 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    'size' => 0
+  }
+};
