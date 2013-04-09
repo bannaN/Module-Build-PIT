@@ -1,0 +1,15 @@
+# Perltidy configuration file 
+
+# Indent two spaces
+--indent-columns=2
+
+# A comma which follows a comma arrow, '=>', requires special
+# consideration.  n=2 means: Break at all commas after =>, but try to
+# form the maximum one-line container lengths
+--comma-arrow-breakpoints=2
+
+# Allow else immediately after curly braces
+--cuddled-else
+
+# Allow abit longer lines then default
+--maximum-line-length=160
