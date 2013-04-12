@@ -30,8 +30,8 @@ sub process_t_files {
   for my $dir (@$test_dirs) {
     for my $f ( @{ $self->rscan_dir( File::Spec->catdir( $self->base_dir, $dir ), sub { -f } ) } ) {
       $f =~ s{\A.*\Q$dir\E/}{};
-      $files{ File::Spec->catdir( $dir, $f ) } =
-        File::Spec->catdir( $prefix, $dir, $f );
+      $files{ File::Spec->catfile( $dir, $f ) } =
+        File::Spec->catfile( $prefix, $dir, $f );
     }
   }
   my @keys   = keys %files;
