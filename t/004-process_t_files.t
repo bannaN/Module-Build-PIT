@@ -9,7 +9,7 @@ use Cwd qw(abs_path);
 
 use_ok('Module::Build::PIT');
 
-my $mbp = Module::Build::PIT->new( dist_name => 'Human', dist_version => '0.01', module_name => 'Human', tests => 't/Modules/Human-0.01/t' );
+my $mbp = Module::Build::PIT->new( dist_name => 'Human', dist_version => '0.01', module_name => 'Human');
 
 {    #Without the env set. The method should return undef.
   local $ENV{'PERL_INSTALL_TESTS'} = undef;
@@ -20,9 +20,11 @@ my $mbp = Module::Build::PIT->new( dist_name => 'Human', dist_version => '0.01',
   local $ENV{'PERL_INSTALL_TESTS'} = 1;
 
   my ( $base_dir, $file ) = ( undef, __FILE__ );
-  my $relfile = File::Spec->catfile(qw/t 004-process_t_files.t/);
   $file = Cwd::abs_path($file);
+  my $relfile = File::Spec->catfile(qw/004-process_t_files.t/);
+  
   ( $base_dir = $file ) =~ s/\Q$relfile\E$//;
+  $base_dir = File::Spec->catdir($base_dir, qw( Modules Human-0.01 ) );
 
   my $mbp_mocked = Test::MockObject::Extends->new($mbp);
 
@@ -37,8 +39,7 @@ my $mbp = Module::Build::PIT->new( dist_name => 'Human', dist_version => '0.01',
   );
 
   my @expected = (
-    { from => 't/Modules/Human-0.01/t/00-human.t',                  to => 'blib/lib/auto/tests/Human-0.01/t/Modules/Human-0.01/t/00-human.t' },
-    { from => 't/Modules/Human-0.01/t/moretests/01-human-retest.t', to => 'blib/lib/auto/tests/Human-0.01/t/Modules/Human-0.01/t/moretests/01-human-retest.t' }
+    { from => 'Human-0.01.tar.gz', to => 'blib/lib/auto/tests/Human-0.01.tar.gz' },
   );
 
   $mbp_mocked->mock(

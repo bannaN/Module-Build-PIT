@@ -4,41 +4,52 @@ use strict;
 use warnings;
 
 use base qw(Module::Build);
-use ExtUtils::Installed;
+use Cwd;
+use Archive::Tar;
 
 our $VERSION = "0.002";
-
-sub test_dirs {
-  my $self = shift;
-  return ( ref( $self->{properties}->{tests} ) eq 'ARRAY' )
-    ? $self->{properties}->{tests}
-    : [ $self->{properties}->{tests} ];
-}
 
 sub process_t_files {
   my $self = shift;
 
   return unless $ENV{'PERL_INSTALL_TESTS'};
+  
+  my $prefix = File::Spec->catdir( $self->blib, qw/lib auto tests/);
 
-  my $test_dirs = $self->test_dirs;
-  return unless $test_dirs;
 
-  my $prefix = File::Spec->catdir( $self->blib, qw/lib auto tests/, $self->dist_name() . "-" . $self->dist_version() );
+  
+  #Find all files in this directory
+  my @files = @{$self->rscan_dir( File::Spec->catdir( $self->base_dir), sub {
+    my $file = $_;
+    return unless(-f $file);
+    return 1;
+  } )};
 
-  #Search the directories
-  my %files;
-  for my $dir (@$test_dirs) {
-    for my $f ( @{ $self->rscan_dir( File::Spec->catdir( $self->base_dir, $dir ), sub { -f } ) } ) {
-      $f =~ s{\A.*\Q$dir\E/}{};
-      $files{ File::Spec->catfile( $dir, $f ) } =
-        File::Spec->catfile( $prefix, $dir, $f );
-    }
-  }
-  my @keys   = keys %files;
-  my @values = values %files;
-  while ( my ( $file, $dest ) = each %files ) {
-    $self->copy_if_modified( from => $file, to => $dest );
-  }
+  
+    #Remove the base_dir. +1 because we want to also remove the additional /
+  @files = map { substr($_, (length($self->base_dir) + 1)) } @files;
+
+  
+  #Take all those files and add them to a tar archive
+  my $current_dir = getcwd;
+  
+  my $tar = Archive::Tar->new;
+  
+  #Change the working directory
+  chdir($self->base_dir);
+  #Add files to archive
+  $tar->add_files(@files);
+
+  #Write first the tar file to the base_dir and then use Module::Builds functions to move it
+  my $tar_filename = $self->dist_name . "-" . $self->dist_version() . ".tar.gz";
+  $tar->write(File::Spec->catfile($self->base_dir, $tar_filename), COMPRESS_GZIP, $self->dist_name . "-" . $self->dist_version());
+  
+  #Move the archive into the install directory
+  $self->copy_if_modified( from => $tar_filename, to => File::Spec->catfile($prefix, $tar_filename) );
+
+  #Revert the working directory change
+  chdir($current_dir);
+  
   return 1;
 }
 
@@ -61,31 +72,22 @@ sub ACTION_fakeinstall {
 
     #Looking for old tests
     opendir( my $dh, $dir ) || die "can't opendir " . $dir . ": $!";
-    my @dirs =
-      grep { /^$dist_name/ && -d File::Spec->catdir( $dir, $_ ) } readdir($dh);
+    my @archives = grep { /^$dist_name/ && -f File::Spec->catfile( $dir, $_ ) } readdir($dh);
     closedir $dh;
 
     my $r;
-
-    if ( scalar( @dirs > 3 ) ) {
+    
+    for(my $i = 0; $i < scalar(@archives); $i++){
       $r = $self->y_n(
-        'You have a large number of test for old versions of '
-          . $self->dist_name()
-          . '. Do you want to delete all the old tests? (This is a fakeinstall. Action will _NOT_ be executed)',
+        'You have an old archive named ' . $archives[$i]
+          . '. Do you want to delete it? (This is a fakeinstall. Action will _NOT_ be executed)',
         'y'
       );
-    }
-
-    if ($r) {
-      print "Deleting " . File::Spec->catdir( $dir, $_ ) for @dirs;
-    } else {
-      foreach my $ldir (@dirs) {
-        if ( $self->y_n( 'Delete ' . File::Spec->catdir( $dir, $ldir ) . '? (This is a fakeinstall. Action will not be executed)', 'y' ) ) {
-          print "Deleting " . File::Spec->catdir( $dir, $ldir ) . "\n";
-        }
+      if ($r) {
+        print "Deleting " . File::Spec->catfile( $dir, $archives[$i] );
       }
+      
     }
-
   }
 
   #Retval is the return structure from ExtUtils::Install::install
@@ -109,33 +111,29 @@ sub ACTION_install {
       die("Cannot create $dir ") if !mkdir($dir);
     }
 
+    
+    
+    
     my $dist_name = $self->dist_name;
+    
+    #Looking for old tests
     opendir( my $dh, $dir ) || die "can't opendir " . $dir . ": $!";
-    my @dirs =
-      grep { /^$dist_name/ && -d File::Spec->catdir( $dir, $_ ) } readdir($dh);
+    my @archives = grep { /^$dist_name/ && -f File::Spec->catfile( $dir, $_ ) } readdir($dh);
     closedir $dh;
+    
 
     my $r;
-
-    if ( scalar( @dirs > 1 ) ) {
+    for(my $i = 0; $i < scalar(@archives); $i++){
       $r = $self->y_n(
-        'You have tests for a large number('
-          . scalar(@dirs)
-          . ') of versions of '
-          . $self->dist_name()
-          . ' installed. Do you want to delete all the old tests?',
+        'You have an old archive named ' . $archives[$i]
+          . '. Do you want to delete it?',
         'y'
       );
-    }
-    if ($r) {
-      my @del_dirs = map { File::Spec->catdir( $dir, $_ ) } @dirs;
-      remove_tree( @del_dirs, { verbose => 1 } );
-    } else {
-      foreach my $ldir (@dirs) {
-        if ( $self->y_n( 'Delete ' . File::Spec->catdir( $dir, $ldir ) . '?', 'y' ) ) {
-          remove_tree( File::Spec->catdir( $dir, $ldir ), { verbose => 1 } );
-        }
+      if ($r) {
+        print "Deleting " . File::Spec->catfile( $dir, $archives[$i] ) . "\n";
+        unlink($archives[$i]);
       }
+      
     }
   }
 
@@ -149,113 +147,7 @@ sub ACTION_installtests {
   return $self->depends_on('install');
 }
 
-sub _get_ext_installed_obj {
-  return ExtUtils::Installed->new();
-}
 
-sub _find_installed_test_files {
-  my ( $self, @wanted_modules ) = @_;
-
-  my @test_files = (
-
-    #    [file1, alias1],
-    #    [file2, alias2]
-  );
-
-  my $inst                = $self->_get_ext_installed_obj();
-  my (@installed_modules) = $inst->modules();
-  my @modules             = ();
-
-  if ( scalar(@wanted_modules) > 0 ) {
-
-    #keep the duplicates in @installed_modules
-    my %wanted = map { $_ => 1 } @wanted_modules;
-    foreach my $inst_module (@installed_modules) {
-      push( @modules, $inst_module ) if grep { m/^\Q$inst_module\E$/ } @wanted_modules;
-    }
-  } else {
-    @modules = @installed_modules;
-  }
-
-  foreach my $module (@modules) {
-    my $path = File::Spec->catdir(qw/auto tests/);
-
-    #Best effort
-    my @files = grep { defined && m/$path/ } $inst->files($module);
-    next unless scalar(@files) > 0;
-    my $dist_name;
-    ( $dist_name = $module ) =~ s/::/\-/g;
-    push @test_files, map {
-      my $alias = $_;
-      my $file  = $_;
-      $alias =~ s/.*($dist_name\-[\d\.]+)/$1/;
-      [ $_, File::Spec->catdir($alias) ]
-    } @files;
-  }
-
-  return @test_files;
-}
-
-sub _find_reverse_dependencies {
-  my ( $self, $dist_name ) = @_;
-
-  #A fake method, just to illustrate the command behaviour
-  return ('Bear') if $dist_name eq 'Human';
-
-  return;
-}
-
-sub ACTION_testinc {
-  my $self = shift;
-
-  $self->depends_on('code');
-
-  # Protect others against our @INC changes
-  local @INC = @INC;
-
-  # Make sure we test the module in blib/
-  unshift @INC, ( File::Spec->catdir( $self->base_dir, $self->blib, 'lib' ), File::Spec->catdir( $self->base_dir, $self->blib, 'arch' ) );
-
-  my @tests = ();
-
-  my @installed_tests = $self->_find_installed_test_files();
-
-  push @tests, @installed_tests;
-  push @tests, @{ $self->find_test_files };
-
-  my $agg = $self->run_tap_harness( \@tests );
-  if ( $agg->has_errors ) {
-    die "Errors in testing. Cannot continue.\n";
-  }
-  return 1;
-}
-
-sub ACTION_testrdeps {
-  my ($self) = @_;
-
-  $self->depends_on('code');
-
-  # Protect others against our @INC changes
-  local @INC = @INC;
-
-  # Make sure we test the module in blib/
-  unshift @INC, ( File::Spec->catdir( $self->base_dir, $self->blib, 'lib' ), File::Spec->catdir( $self->base_dir, $self->blib, 'arch' ) );
-
-  my @rdeps = $self->_find_reverse_dependencies( $self->module_name() );
-
-  my @tests           = ();
-  my @installed_tests = $self->_find_installed_test_files(@rdeps);
-
-  push @tests, @installed_tests;
-  push @tests, @{ $self->find_test_files };
-
-  my $agg = $self->run_tap_harness( \@tests );
-  if ( $agg->has_errors ) {
-    die "Errors in testing. Cannot continue.\n";
-  }
-  return 1;
-
-}
 
 1;
 
@@ -345,22 +237,6 @@ Just sets the PERL_INSTALL_TESTS=1 and runs install
 
 The method copies the configured test files into the blib directory if the environment variable PERL_INSTALL_TESTS is set.
 The test files are copied to a path like blib/lib/auto/tests/Some-Module-0.01/
-
-=item test_dirs()
-
-The methods returns an array ref of folders (relative to the base dir) that contains test files and or data.
-The array ref can be set with the tests keyword in the Module::Build configuration.
-
-=item ACTION_testinc()
-
-Method for running the tests for modules in your current @INC (If they have installed their test files)
-
-Useful for checking that the current module you are installing isnt going to break the functionality of some other module.
-
-=item ACTION_testrdeps()
-
-Method for running tests for all reverse dependencies of the module currently being installed.
-At this point in time this is not functional, its only a dummy method.
 
 =back
 
